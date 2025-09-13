@@ -83,12 +83,8 @@ def main():
         if line[0] not in ('(', '/'):
             line_count += 1
 
-    # Show symbol table
-    for s in symbol_table:
-        print(f'{s}: {symbol_table[s]}')
-
-
     # translate asm into hack
+    next_available_RAM_addr = 16
     with open(save_path, 'a') as hack_file:
         hack_file.truncate(0)
         for line in input_asm:
@@ -98,7 +94,11 @@ def main():
             elif line[0] == '@': # a instruction
                 address = line[1:]
                 if not address[0].isdigit():
+                    if address not in symbol_table:
+                        symbol_table[address] = next_available_RAM_addr
+                        next_available_RAM_addr += 1
                     address = symbol_table[address]
+                        
                 write_line = format(int(address), '016b')
             else: # c instruction
                 write_line = ['1'] * 3 + ['0'] * 13
@@ -129,7 +129,10 @@ def main():
                 write_line = ''.join(write_line)
 
             hack_file.write(write_line + '\n')
-
+    
+    # Show symbol table
+    for s in symbol_table:
+        print(f'{s}: {symbol_table[s]}')
 
 
 if __name__ == "__main__":
