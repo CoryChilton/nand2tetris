@@ -50,20 +50,56 @@ def main():
         'D&M': '1000000',
         'D|M': '1010101',
     }
+
+    symbol_table = {
+        'SP': 0,
+        'LCL': 1,
+        'ARG': 2,
+        'THIS': 3,
+        'THAT': 4,
+        'SCREEN': 16384,
+        'KBD': 24576,
+    }
+
+    for i in range(16):
+        symbol_table[f'R{i}'] = i
     
+    # read .asm file into list
     input_asm = []
     with open(args.path, 'r') as asm_file:
         for line in asm_file:
             input_asm.append(line.strip())
-    
+
+    # populate symbol table
+    line_count = 0
+    for line in input_asm:
+        if line == '':
+            continue
+        if line[0] == '(':
+            symbol = line[1:-1]
+            if symbol not in symbol_table:
+                symbol_table[symbol] = line_count
+        
+        if line[0] not in ('(', '/'):
+            line_count += 1
+
+    # Show symbol table
+    for s in symbol_table:
+        print(f'{s}: {symbol_table[s]}')
+
+
+    # translate asm into hack
     with open(save_path, 'a') as hack_file:
         hack_file.truncate(0)
         for line in input_asm:
             write_line = ''
-            if line == '' or line[0:2] == '//': # comment or empty
+            if line == '' or line[0] == '(' or line[0:2] == '//': # comment or empty
                 continue
             elif line[0] == '@': # a instruction
-                write_line = format(int(line[1:]), '016b')
+                address = line[1:]
+                if not address[0].isdigit():
+                    address = symbol_table[address]
+                write_line = format(int(address), '016b')
             else: # c instruction
                 write_line = ['1'] * 3 + ['0'] * 13
                 line = line.split('=')
